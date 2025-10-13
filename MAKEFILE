@@ -1,0 +1,118 @@
+# MAKEFILE for Snake - Turbo C++, MS-DOS
+#
+# Run Turbo C++'s MAKE from this folder, with TC set to the Turbo C++
+# installation folder, in the environment or on the command line:
+#   SET TC=<turbo-c++-folder>
+#   MAKE
+# or
+#   MAKE -DTC=<turbo-c++-folder>
+# See README.md.
+
+!if !$d(TC)
+!error TC is not set to the Turbo C++ installation folder. See README.md.
+!endif
+
+CC      = $(TC)\BIN\TCC.EXE
+INCLUDE = $(TC)\INCLUDE
+LIB     = $(TC)\LIB
+
+# -ms : small memory model
+# -I  : where headers are found: Turbo C++'s own, and this folder, since
+#       every project #include is written from here ("hardware\rtc.h")
+# -L  : where Turbo C++'s libraries are found
+CFLAGS  = -ms -I$(INCLUDE) -I. -L$(LIB)
+
+EXE     = snake.exe
+
+OBJS    = main.obj \
+          gameplay.obj layout.obj controls.obj melodies.obj \
+          video.obj sound.obj clock.obj input.obj \
+          cga.obj keyboard.obj pic.obj pit.obj rtc.obj speaker.obj
+
+# Links the objects into the exe. A DOS command line holds at most 127
+# characters, too few for all the .obj names, so TCC reads its arguments
+# from a response file (link.rsp) written first.
+$(EXE): $(OBJS)
+	echo -ms > link.rsp
+	echo -I$(INCLUDE) >> link.rsp
+	echo -L$(LIB) >> link.rsp
+	echo -e$(EXE) >> link.rsp
+	echo main.obj >> link.rsp
+	echo gameplay.obj >> link.rsp
+	echo layout.obj >> link.rsp
+	echo controls.obj >> link.rsp
+	echo melodies.obj >> link.rsp
+	echo video.obj >> link.rsp
+	echo sound.obj >> link.rsp
+	echo clock.obj >> link.rsp
+	echo input.obj >> link.rsp
+	echo cga.obj >> link.rsp
+	echo keyboard.obj >> link.rsp
+	echo pic.obj >> link.rsp
+	echo pit.obj >> link.rsp
+	echo rtc.obj >> link.rsp
+	echo speaker.obj >> link.rsp
+	$(CC) @link.rsp
+
+# Compiles each .c into a .obj in this folder. The sources are in
+# subfolders, so each object has its own rule. Each rule lists every
+# project header its .c includes, directly or through another header, so
+# changing a header rebuilds every object that uses it.
+
+main.obj: main.c game\gameplay.h platform\video.h platform\clock.h \
+          platform\input.h hardware\cga.h hardware\keyboard.h common.h
+	$(CC) $(CFLAGS) -c main.c
+
+gameplay.obj: game\gameplay.c game\gameplay.h game\layout.h \
+              game\controls.h game\melodies.h platform\clock.h \
+              platform\sound.h common.h
+	$(CC) $(CFLAGS) -c game\gameplay.c
+
+layout.obj: game\layout.c game\layout.h game\style.h platform\video.h \
+            hardware\cga.h common.h
+	$(CC) $(CFLAGS) -c game\layout.c
+
+controls.obj: game\controls.c game\controls.h platform\input.h \
+              hardware\keyboard.h common.h
+	$(CC) $(CFLAGS) -c game\controls.c
+
+melodies.obj: game\melodies.c game\melodies.h platform\sound.h
+	$(CC) $(CFLAGS) -c game\melodies.c
+
+video.obj: platform\video.c platform\video.h hardware\cga.h common.h
+	$(CC) $(CFLAGS) -c platform\video.c
+
+sound.obj: platform\sound.c platform\sound.h platform\clock.h \
+           hardware\pit.h hardware\speaker.h common.h
+	$(CC) $(CFLAGS) -c platform\sound.c
+
+clock.obj: platform\clock.c platform\clock.h hardware\rtc.h common.h
+	$(CC) $(CFLAGS) -c platform\clock.c
+
+input.obj: platform\input.c platform\input.h hardware\keyboard.h common.h
+	$(CC) $(CFLAGS) -c platform\input.c
+
+cga.obj: hardware\cga.c hardware\cga.h common.h
+	$(CC) $(CFLAGS) -c hardware\cga.c
+
+keyboard.obj: hardware\keyboard.c hardware\keyboard.h hardware\pic.h common.h
+	$(CC) $(CFLAGS) -c hardware\keyboard.c
+
+pic.obj: hardware\pic.c hardware\pic.h
+	$(CC) $(CFLAGS) -c hardware\pic.c
+
+pit.obj: hardware\pit.c hardware\pit.h
+	$(CC) $(CFLAGS) -c hardware\pit.c
+
+rtc.obj: hardware\rtc.c hardware\rtc.h hardware\pic.h common.h
+	$(CC) $(CFLAGS) -c hardware\rtc.c
+
+speaker.obj: hardware\speaker.c hardware\speaker.h hardware\ppi.h common.h
+	$(CC) $(CFLAGS) -c hardware\speaker.c
+
+# Deletes everything the build made. The - before del keeps going when a
+# file is already gone.
+clean:
+	-del *.obj
+	-del $(EXE)
+	-del link.rsp
